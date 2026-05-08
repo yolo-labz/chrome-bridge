@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build-and-release:
+    name: Build, attest, and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release tarball
+        id: build
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.name }}"
+          PKG="chrome-bridge-${TAG}"
+          mkdir -p dist
+          # Reproducible-ish tarball: deterministic ordering, no uid/gid drift.
+          git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" "${TAG}" \
+            || git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" HEAD
+          ( cd dist && sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256" )
+          echo "tarball=dist/${PKG}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "checksum=dist/${PKG}.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: dist/sbom.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest build provenance (tarball + SBOMs)
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: |
+            ${{ steps.build.outputs.tarball }}
+            dist/sbom.cdx.json
+            dist/sbom.spdx.json
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.name }}"
+          gh release view "${TAG}" >/dev/null 2>&1 \
+            || gh release create "${TAG}" \
+                 --title "${TAG}" \
+                 --generate-notes
+          gh release upload "${TAG}" \
+            ${{ steps.build.outputs.tarball }} \
+            ${{ steps.build.outputs.checksum }} \
+            dist/sbom.cdx.json \
+            dist/sbom.spdx.json \
+            --clobber
