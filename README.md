@@ -120,6 +120,82 @@ The launcher resolves the CfT binary at `~/Library/Caches/ms-playwright/chromium
 - **P4** — Profile management — manifest.lock pattern matching `wa` plugin (SessionStart hook diffs bundled vs installed extension, reinstalls on drift)
 - **P5** — generalize to Instagram + future sites (per the synthesis doc roadmap)
 
+## Supply chain & verification
+
+Every tagged release ships with:
+
+- `chrome-bridge-<tag>.tar.gz` — deterministic source archive (`git archive`)
+- `chrome-bridge-<tag>.tar.gz.sha256` — SHA-256 manifest
+- `sbom.cdx.json` — CycloneDX 1.7 SBOM
+- `sbom.spdx.json` — SPDX 2.3 SBOM
+- A single SLSA v1 build provenance attestation (signed via Sigstore, logged to Rekor) covering all three artifacts as subjects
+
+The build runs on a GitHub-hosted runner from a tag-triggered workflow at `.github/workflows/release.yml`, with every action pinned by 40-char commit SHA. Provenance `builder.id` resolves to `…/release.yml@refs/tags/<tag>`, `runnerEnvironment=github-hosted`, `sourceRepositoryVisibilityAtSigning=public`.
+
+### Verify a release
+
+```sh
+TAG=v0.1.0
+mkdir -p /tmp/cb-verify && cd /tmp/cb-verify
+gh release download "$TAG" --repo yolo-labz/chrome-bridge
+
+# 1. Hash check.
+sha256sum -c "chrome-bridge-${TAG}.tar.gz.sha256"
+
+# 2. Attestation check (all three artifacts share one Rekor entry).
+for f in chrome-bridge-${TAG}.tar.gz sbom.cdx.json sbom.spdx.json; do
+  gh attestation verify "$f" --repo yolo-labz/chrome-bridge \
+    && echo "  ✓ $f"
+done
+```
+
+`gh attestation verify` exits 0 silently on success. Add `--format json` to inspect the full DSSE envelope, Rekor `logIndex`, and `sourceRepositoryDigest`.
+
+### Pin from a NixOS / nix-darwin derivation
+
+Downstream consumers (e.g. `claude-mac-chrome`, `wa`, the home-manager fleet) should pin chrome-bridge by `git rev` + `sha256` of the release tarball, then **verify the attestation at build time**. Minimal pattern:
+
+```nix
+{ pkgs, ... }:
+let
+  tag = "v0.1.0";
+  src = pkgs.fetchurl {
+    url = "https://github.com/yolo-labz/chrome-bridge/releases/download/${tag}/chrome-bridge-${tag}.tar.gz";
+    # sha256 from the published .sha256 manifest:
+    sha256 = "6f8cd6fe2e171bee29db641a0dd831dc699b4777923d1d8641d78f8bc2ac2fd8";  # v0.1.0 — verify with `nix-prefetch-url <url>`
+  };
+in pkgs.stdenvNoCC.mkDerivation {
+  pname = "chrome-bridge";
+  version = tag;
+  inherit src;
+  sourceRoot = "chrome-bridge-${tag}";
+
+  # Optional: gate the build on attestation verification.
+  # Requires `gh` + network; only viable for impure --option sandbox relaxed builds
+  # or as a CI-side check that runs before pushing the resulting store path.
+  # buildInputs = [ pkgs.gh ];
+  # preConfigure = ''
+  #   gh attestation verify $src --repo yolo-labz/chrome-bridge --denylist-org=""
+  # '';
+
+  installPhase = ''
+    mkdir -p $out/{libexec,bin}
+    cp -r cli extension launch scripts $out/libexec/
+    install -Dm755 cli/cb $out/bin/cb
+    install -Dm755 launch/profile-auto.sh $out/bin/cb-launch-profile-auto
+  '';
+
+  meta = with pkgs.lib; {
+    description = "Trusted-event Chrome automation bridge";
+    homepage = "https://github.com/yolo-labz/chrome-bridge";
+    license = licenses.mit;
+    platforms = platforms.unix;
+  };
+}
+```
+
+For a flake input, prefer `inputs.chrome-bridge.url = "github:yolo-labz/chrome-bridge/v0.1.0"` (immutable tag ref) — the flake lock will pin the exact commit `narHash`, and you can still run `gh attestation verify` against a separately-fetched release tarball as a parallel CI gate.
+
 ## License
 
 MIT. See `LICENSE`.
