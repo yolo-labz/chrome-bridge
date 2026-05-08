@@ -23,11 +23,20 @@ EXTENSION_DIR="$REPO_ROOT/extension"
 
 # Per-OS defaults. Override either via env (CB_PROFILE_DIR / CB_CHROME_BIN).
 #
-# macOS: Chrome for Testing (CfT) is the default — same Blink/V8 build as
-# Chrome Stable, but without the brand-restriction that hard-blocks
-# --load-extension in Chrome Stable/Beta/Dev/Canary as of v137+. Bundled and
-# code-signed via Playwright/Patchright (`uvx --from patchright patchright
-# install chromium`). Clears Gatekeeper via Microsoft+Google joint sigs.
+# macOS: candidate chain, first match wins. All candidates must be UNBRANDED
+# (i.e. NOT Google-branded Chrome stable/beta/dev/canary) since Chrome 137+
+# enforces `DisableLoadExtensionCommandLineSwitch` even with the
+# --disable-features flag, silently dropping --load-extension.
+#
+# Order:
+#   1. Homebrew cask `chromium` (Eloston ungoogled-chromium build, code-signed
+#      ad-hoc, requires `xattr -dr com.apple.quarantine /Applications/Chromium.app`
+#      on first launch — see README "macOS install" section)
+#   2. Chrome for Testing (CfT) bundled by Patchright/Playwright. Same Blink/V8
+#      as Stable, but the brand-restriction is off. Code-signed by Microsoft +
+#      Google joint sigs; clears Gatekeeper without quarantine surgery.
+#   3. /Applications/Chromium.app (manual install, e.g. from chromium.org or
+#      a download not via Homebrew cask)
 #
 # Linux: nix `chromium` from nixpkgs is the default — open-source Chromium
 # build (not Google-branded Chrome), so the brand-restriction policy
@@ -37,7 +46,41 @@ EXTENSION_DIR="$REPO_ROOT/extension"
 case "$(uname -s)" in
   Darwin)
     PROFILE_DEFAULT="$HOME/Library/Application Support/Google/Chrome-Auto"
-    CHROME_DEFAULT="$HOME/Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+    # Probe each candidate's --version output and accept ONLY when the first
+    # token is literally "Chromium". Mirrors the Linux brand-guard.
+    _cb_is_unbranded_chromium_darwin() {
+      local bin="$1"
+      [[ -x "$bin" ]] || return 1
+      local ver
+      ver="$("$bin" --version 2>/dev/null)" || return 1
+      # CfT identifies as "Google Chrome for Testing", but the binary honors
+      # --load-extension because the brand-restriction policy is gated on the
+      # full brand string. Accept both forms.
+      [[ "$ver" == Chromium\ * || "$ver" == "Google Chrome for Testing"\ * ]]
+    }
+    _cb_darwin_candidates=(
+      # Homebrew cask `chromium` (ungoogled-chromium)
+      "/Applications/Chromium.app/Contents/MacOS/Chromium"
+      # Chrome for Testing (Patchright/Playwright bundle, version-pinned dir)
+      "$HOME/Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+      # Common fallback paths
+      "/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+    )
+    # Also probe any chromium-1NNN dir under ms-playwright (CfT version drift)
+    if [[ -d "$HOME/Library/Caches/ms-playwright" ]]; then
+      while IFS= read -r -d '' _cb_cft; do
+        _cb_darwin_candidates+=("$_cb_cft")
+      done < <(find "$HOME/Library/Caches/ms-playwright" \
+        -maxdepth 5 -type f -name "Google Chrome for Testing" -print0 2>/dev/null)
+    fi
+    CHROME_DEFAULT=""
+    for _cb_cand in "${_cb_darwin_candidates[@]}"; do
+      if _cb_is_unbranded_chromium_darwin "$_cb_cand"; then
+        CHROME_DEFAULT="$_cb_cand"
+        break
+      fi
+    done
+    unset _cb_darwin_candidates _cb_cand _cb_cft
     ;;
   Linux)
     PROFILE_DEFAULT="${XDG_DATA_HOME:-$HOME/.local/share}/browser-automation/profiles/auto"

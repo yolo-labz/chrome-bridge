@@ -31,16 +31,47 @@ Solves the `isTrusted=true` event-trust gate on Vue/React SPAs and the JA4+ TLS 
 
 **Daily Chrome** — Pedro's main browsing profile — is **not touched**. Profile-Auto runs in a separate `--user-data-dir` and is only launched when automation work is pending.
 
-## Why Chrome for Testing (CfT)
+## Why an unbranded Chromium
 
-Chrome 137+ stable / beta / dev / canary all hard-block `--load-extension` regardless of `--disable-features` flags. Chromium fails macOS Tahoe Gatekeeper (unsigned). **Chrome for Testing** is Google's official testing distribution: same Blink/V8 build as Stable, but without the brand-restriction enforcement on `--load-extension`. Bundled and signed via Microsoft's Playwright CDN. Install once:
+Chrome 137+ stable / beta / dev / canary all hard-block `--load-extension` regardless of `--disable-features` flags (the `DisableLoadExtensionCommandLineSwitch` policy is now compiled in, not toggleable). Only **unbranded** Chromium builds — open-source Chromium proper, or Chrome for Testing (CfT) — still honour `--load-extension`.
+
+The launcher (`launch/profile-auto.sh`) probes a per-OS candidate chain and brand-guards each candidate by parsing `--version` output, refusing anything that identifies as `Google Chrome` (without `for Testing`).
+
+### macOS install
+
+Two supported paths, first match wins:
+
+**Option 1 — Homebrew cask (recommended, smallest install):**
+
+```sh
+brew install --cask chromium
+# Clear Gatekeeper quarantine on first install (ad-hoc signed):
+xattr -dr com.apple.quarantine /Applications/Chromium.app
+```
+
+**Option 2 — Chrome for Testing via Patchright (heavier, but Microsoft+Google co-signed, no quarantine surgery):**
 
 ```sh
 uv tool install patchright
 uvx --from patchright patchright install chromium
 ```
 
-The launcher resolves the CfT binary at `~/Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app`.
+The launcher resolves candidates in this order: `/Applications/Chromium.app` → `~/Library/Caches/ms-playwright/chromium-1208/...` (CfT) → `/Applications/Google Chrome for Testing.app` → glob-fallback for any `chromium-1NNN/` CfT version drift under `~/Library/Caches/ms-playwright/`.
+
+Override with `CB_CHROME_BIN=/path/to/binary ./launch/profile-auto.sh`.
+
+> macOS launcher changes in this section have not been smoke-tested on macOS in this session — desktop is x86_64-linux. Verify on macbook-pro before relying on the candidate chain. Linux path is smoke-tested.
+
+### Linux install
+
+Use the Nixpkgs `chromium` derivation (open-source Chromium, brand string `Chromium`, honours `--load-extension`):
+
+```sh
+# NixOS / nix-darwin: add to systemPackages or home-manager packages
+environment.systemPackages = [ pkgs.chromium ];
+```
+
+Or any distro-packaged `chromium` binary on `$PATH`. Google-branded `google-chrome` is rejected by the launcher's brand-guard.
 
 ## Three-tier surface taxonomy
 
