@@ -1,0 +1,16 @@
+# Node / dist
+node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local state (relay logs, pid files)
+.local-state/
+
+# OS
+.DS_Store
+Thumbs.db

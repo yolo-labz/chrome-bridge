@@ -1,0 +1,116 @@
+{
+  "resolved": [
+    {
+      "label": "Artificial Intelligence",
+      "id": "1031626716094119936",
+      "match": "exact"
+    },
+    {
+      "label": "Large Language Model",
+      "id": "1631308909744410624",
+      "match": "exact"
+    },
+    {
+      "label": "Retrieval Augmented Generation",
+      "id": "1733104401058775043",
+      "match": "exact"
+    },
+    {
+      "label": "AI Agent Development",
+      "id": "1691099314245873665",
+      "match": "exact"
+    },
+    {
+      "label": "Claude",
+      "id": "1691099315571273728",
+      "match": "subst for Anthropic Claude (per memory: search 'Claude')"
+    },
+    {
+      "label": "Amazon Bedrock",
+      "id": "1691099315239923712",
+      "match": "subst for AWS Bedrock (canonical Upwork name)"
+    },
+    {
+      "label": "Vector Database",
+      "id": "1691099315080540161",
+      "match": "subst for pgvector (closest ontology match)"
+    },
+    {
+      "label": "Prompt Engineering",
+      "id": "1623716864308154368",
+      "match": "exact"
+    },
+    {
+      "label": "Python",
+      "id": "996364628025274386",
+      "match": "exact"
+    },
+    {
+      "label": "TypeScript",
+      "id": "996364628025274389",
+      "match": "exact"
+    },
+    {
+      "label": "Web Scraping",
+      "id": "1504884906003529729",
+      "match": "exact"
+    },
+    {
+      "label": "Automation",
+      "id": "1031626717876699136",
+      "match": "exact"
+    },
+    {
+      "label": "Data Extraction",
+      "id": "1031626730153426944",
+      "match": "exact"
+    },
+    {
+      "label": "Selenium WebDriver",
+      "id": "1031626778639581184",
+      "match": "exact"
+    },
+    {
+      "label": "Cloud Architecture",
+      "id": "1270387306804789248",
+      "match": "exact"
+    },
+    {
+      "label": "FastAPI",
+      "id": "1691099315655159809",
+      "match": "exact"
+    },
+    {
+      "label": "PostgreSQL",
+      "id": "996364628000108546",
+      "match": "exact"
+    },
+    {
+      "label": "Node.js",
+      "id": "1031626762999021568",
+      "match": "exact"
+    },
+    {
+      "label": "Generative AI",
+      "id": "1631308909400477696",
+      "match": "exact"
+    },
+    {
+      "label": "AI Chatbot",
+      "id": "1623716864341708800",
+      "match": "exact"
+    }
+  ],
+  "gaps": [
+    {
+      "label": "Model Context Protocol",
+      "reason": "0 hits — not in Upwork ontology. Either Suggest-a-Skill submission, or replace with another AI tag (e.g. 'Generative AI', 'AI Chatbot')"
+    },
+    {
+      "label": "Playwright",
+      "reason": "0 hits — not in Upwork ontology. Pedro can use 'Selenium WebDriver' (already in list) + free-text in title/description."
+    }
+  ],
+  "source": "Upwork findSkills GraphQL via chrome-bridge cb gql with visitor_gql_token (CfT 145)",
+  "captured_at_brt": "27/04/2026"
+}

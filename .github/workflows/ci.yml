@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run shellcheck on launch scripts
+        run: |
+          shopt -s nullglob
+          shellcheck launch/*.sh
+      - name: Syntax-check cli/cb (bash shebang dispatch script)
+        run: |
+          if head -n1 cli/cb | grep -qE '^#!.*python'; then
+            python3 -m py_compile cli/cb
+          else
+            bash -n cli/cb
+          fi
+
+  python-lint:
+    name: Python syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Compile cli/cb
+        run: python3 -m py_compile cli/cb
+      - name: Compile scripts/*.py
+        run: |
+          shopt -s nullglob
+          for f in scripts/*.py; do python3 -m py_compile "$f"; done
+
+  manifest-validate:
+    name: Extension manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Validate manifest.json
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          m = json.load(open("extension/manifest.json"))
+          assert m.get("manifest_version") == 3, "must be MV3"
+          assert m.get("name"), "name required"
+          assert m.get("version"), "version required"
+          assert "background" in m and m["background"].get("service_worker"), "service worker required"
+          for f in [m["background"]["service_worker"]]:
+              open(f"extension/{f}").close()
+          for cs in m.get("content_scripts", []):
+              for js in cs.get("js", []):
+                  open(f"extension/{js}").close()
+          for war in m.get("web_accessible_resources", []):
+              for res in war.get("resources", []):
+                  open(f"extension/{res}").close()
+          print("manifest.json OK")
+          PY
+
+  js-syntax:
+    name: Extension JS syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Syntax-check extension JS
+        run: |
+          shopt -s nullglob
+          for f in extension/*.js; do
+            node --check "$f"
+          done

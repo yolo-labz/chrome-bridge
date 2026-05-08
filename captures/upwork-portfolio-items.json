@@ -1,0 +1,42 @@
+{
+  "source": "extracted from 2. Areas/👷 Work/UPWORK-OPERATOR-CHECKLIST.md trimmed descriptions",
+  "captured_at_brt": "27/04/2026",
+  "items": [
+    {
+      "title": "wa — JSON-RPC unix-socket WhatsApp daemon (yolo-labz)",
+      "role": "Backend / Infrastructure Engineer",
+      "description": "JSON-RPC unix-socket daemon owning a WhatsApp Multi-Device session; thin client speaks from cron jobs or agent loops. Built on whatsmeow. Two-binary split, single-instance per profile, never runs as root. SQLite Signal-protocol ratchet store, crash-safe. Refuses destructive flags an LLM might invent. Supply-chain hardened: SLSA L2, Sigstore cosign, dual-format SBOM, OSV-Scanner V2. Reproducible builds via -trimpath + SOURCE_DATE_EPOCH. gh attestation verify is the user-side path. Pattern transferable to any agent/messaging integration.",
+      "skills": ["AI Agent Development", "Automation", "Claude", "Cloud Architecture", "Model Context Protocol"]
+    },
+    {
+      "title": "claude-mac-chrome — deterministic Chrome control on macOS (yolo-labz)",
+      "role": "Backend / Infrastructure Engineer",
+      "description": "Bash plugin that drives Chrome on macOS via AppleScript JS-injection + cliclick fallback. Reads Chrome's Local State for profile catalog (deterministic, no scraping). Stable window/tab IDs across reloads. Bypasses isTrusted gate on React/Ember SPAs. Used by every yolo-labz plugin needing browser interaction. Per-action audit log at ~/.local/state/. SLSA L2 + Sigstore cosign + dual-format SBOM. Apache-2.0. macOS 13+. Pattern transferable: deterministic Chrome control without browser extensions or CDP.",
+      "skills": ["Automation", "Web Scraping", "AI Agent Development", "TypeScript", "Claude"]
+    },
+    {
+      "title": "AI Document Processor — multi-format → Claude → JSONB pipeline",
+      "role": "Backend / Full-Stack Engineer",
+      "description": "Multi-format document pipeline: PDF (text + scanned), JPEG/PNG, DOCX → OCR fallback → Anthropic Claude classification → structured field extraction (vendor, amount, dates, parties) → JSONB storage. FastAPI backend, Next.js dashboard, PostgreSQL with full-text search, Docker compose. 2-minute manual review reduced to 15-second automated pass. Confidence scores routed to human review when below threshold. Three-tier model selection (Haiku for triage, Sonnet for extraction, Opus for ambiguous cases) — cost-optimized.",
+      "skills": ["Artificial Intelligence", "Claude", "Python", "FastAPI", "PostgreSQL"]
+    },
+    {
+      "title": "Multi-source data-aggregation pipeline (Next.js + GitHub Actions)",
+      "role": "Backend Engineer",
+      "description": "Multi-source data-aggregation pipeline. 4 public APIs → unified Pydantic schema → SHA-256 deduplication → seniority classification. GitHub Actions runs daily, commits fresh data, deploys via static site. Next.js builds at compile time (zero runtime cost). Client-side fuzzy search with Fuse.js + 4-dimension filtering, sub-200ms. Hexagonal architecture: domain code cannot import adapters (golangci-lint enforces). 18 sources scaled. Pattern transferable to any multi-API data aggregator.",
+      "skills": ["Python", "Web Scraping", "Data Extraction", "Automation", "Cloud Architecture"]
+    },
+    {
+      "title": "Real estate market dashboard (FastAPI + Next.js + PostgreSQL)",
+      "role": "Full-Stack Engineer",
+      "description": "Full-stack dashboard tracking real estate market data. FastAPI backend with PostgreSQL aggregations, Next.js frontend with Recharts line/bar charts and Leaflet map. Color-coded property markers. Synthetic data pipeline seeds 800 realistic listings via Python generator. Docker Compose orchestrates Postgres + API + Dashboard in single command. Stats p95 < 250ms on indexed queries. Pattern: full-stack data tool with self-contained deploy — no external services, single docker compose up.",
+      "skills": ["Python", "FastAPI", "PostgreSQL", "Cloud Architecture", "Automation"]
+    },
+    {
+      "title": "Serverless CRUD API on AWS (Terraform + Lambda + DynamoDB)",
+      "role": "Backend / Infrastructure Engineer",
+      "description": "Production-ready serverless CRUD API provisioned entirely via Terraform. API Gateway with API key authentication and rate limiting, Lambda (Python 3.12) with structured logging, DynamoDB single-table design, CloudWatch monitoring — 15 resources, all created with terraform apply. Modular Terraform: 5 reusable modules (DynamoDB, IAM, Lambda, API Gateway, Monitoring). On-demand DynamoDB + Lambda free tier = $0/month idle. GitHub Actions validates Terraform on every PR. Pattern transferable to any serverless CRUD.",
+      "skills": ["Cloud Architecture", "Amazon Bedrock", "Python", "Automation", "AI Agent Development"]
+    }
+  ]
+}

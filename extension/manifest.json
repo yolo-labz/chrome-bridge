@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "chrome-bridge",
+  "version": "0.1.0",
+  "description": "Local-only trusted-event automation bridge. Talks to cb relay on 127.0.0.1:9224.",
+  "permissions": [
+    "cookies",
+    "scripting",
+    "debugger",
+    "tabs",
+    "storage",
+    "alarms",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "https://*.upwork.com/*",
+    "https://*.linkedin.com/*",
+    "http://127.0.0.1:9224/*",
+    "http://localhost:9224/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.upwork.com/*"],
+      "js": ["content-bridge.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["main-world-capture.js"],
+      "matches": ["https://*.upwork.com/*"]
+    }
+  ],
+  "minimum_chrome_version": "120"
+}

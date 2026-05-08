@@ -1,0 +1,27 @@
+{
+  "name": "chrome-bridge",
+  "version": "0.1.0",
+  "description": "Trusted-event Chrome automation bridge for the yolo-labz fleet. MV3 first-party extension loaded into a dedicated Profile-Auto Chrome instance plus a localhost relay daemon (cb CLI) that any sibling plugin (claude-mac-chrome, lcc, wa) can shell out to. Provides chrome.cookies + chrome.scripting (MAIN world) + chrome.debugger.Input.* primitives behind a single CLI surface — keeps Pedro's daily Chrome untouched, solves isTrusted=true gates on Vue/React SPAs (Upwork Algolia, Catalog typeahead) without Patchright/CDP-attach blast-radius, and keeps stealth-critical surfaces (LinkedIn primary, banking) hard-blocked at the extension boundary.",
+  "author": {
+    "name": "Pedro Henrique Souza Balbino",
+    "email": "pedrobalbino@proton.me",
+    "url": "https://github.com/phsb5321"
+  },
+  "homepage": "https://github.com/yolo-labz/chrome-bridge",
+  "repository": "https://github.com/yolo-labz/chrome-bridge",
+  "license": "MIT",
+  "keywords": [
+    "chrome",
+    "browser",
+    "automation",
+    "manifest-v3",
+    "chrome-debugger",
+    "graphql",
+    "trusted-events",
+    "isTrusted",
+    "profile-auto",
+    "claude-code",
+    "claude-code-plugin",
+    "yolo-labz"
+  ]
+}
