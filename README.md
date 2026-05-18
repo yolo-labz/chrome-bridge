@@ -230,3 +230,9 @@ For a flake input, prefer `inputs.chrome-bridge.url = "github:yolo-labz/chrome-b
 ## License
 
 MIT. See `LICENSE`.
+
+---
+
+## Services
+
+Compliance-grade AI architecture for regulated workloads — async-first, USD-denominated, LATAM-based / EN-fluent. See [blog.home301server.com.br/services](https://blog.home301server.com.br/services/).
