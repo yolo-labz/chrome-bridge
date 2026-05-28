@@ -10,43 +10,60 @@ on:
         description: "Tag to release (e.g. v0.1.0)"
         required: true
 
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
+# Deny-all at workflow top-level; jobs re-grant the minimum scopes they need.
+# Hardening per spec 024 §2.3 PR-E + release-engineering canon
+# (~/.claude/rules/plugin-release-engineering.md).
+permissions: {}
 
 jobs:
   build-and-release:
     name: Build, attest, and publish release
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write       # publish GitHub Release
+      id-token: write       # keyless OIDC for attest-build-provenance + cosign
+      attestations: write   # actions/attest-build-provenance
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve tag
         id: tag
+        env:
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            printf 'name=%s\n' "$DISPATCH_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            printf 'name=%s\n' "${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build release tarball
         id: build
+        env:
+          TAG: ${{ steps.tag.outputs.name }}
         run: |
           set -euo pipefail
-          TAG="${{ steps.tag.outputs.name }}"
           PKG="chrome-bridge-${TAG}"
           mkdir -p dist
           # Reproducible-ish tarball: deterministic ordering, no uid/gid drift.
           git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" "${TAG}" \
             || git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" HEAD
           ( cd dist && sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256" )
-          echo "tarball=dist/${PKG}.tar.gz" >> "$GITHUB_OUTPUT"
-          echo "checksum=dist/${PKG}.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+          printf 'tarball=dist/%s.tar.gz\n' "${PKG}" >> "$GITHUB_OUTPUT"
+          printf 'checksum=dist/%s.tar.gz.sha256\n' "${PKG}" >> "$GITHUB_OUTPUT"
+          printf 'bundle=dist/%s.tar.gz.cosign.bundle\n' "${PKG}" >> "$GITHUB_OUTPUT"
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
@@ -74,19 +91,48 @@ jobs:
             dist/sbom.cdx.json
             dist/sbom.spdx.json
 
+      # Cosign keyless signing — closes the keyless-signing gap noted in spec 024 §2.3.
+      # OIDC issuer is token.actions.githubusercontent.com (CI ambient identity); never
+      # the interactive github.com/login/oauth path. Bundle output is portable and
+      # verifiable with `cosign verify-blob --bundle` offline.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+
+      - name: Sign release tarball (keyless OIDC)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          TARBALL: ${{ steps.build.outputs.tarball }}
+          BUNDLE: ${{ steps.build.outputs.bundle }}
+        run: |
+          set -euo pipefail
+          cosign sign-blob --yes \
+            --bundle "$BUNDLE" \
+            "$TARBALL"
+
+      - name: Upload cosign bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cosign-bundle
+          path: ${{ steps.build.outputs.bundle }}
+          if-no-files-found: error
+
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.name }}
+          TARBALL: ${{ steps.build.outputs.tarball }}
+          CHECKSUM: ${{ steps.build.outputs.checksum }}
+          BUNDLE: ${{ steps.build.outputs.bundle }}
         run: |
           set -euo pipefail
-          TAG="${{ steps.tag.outputs.name }}"
-          gh release view "${TAG}" >/dev/null 2>&1 \
-            || gh release create "${TAG}" \
-                 --title "${TAG}" \
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" \
+                 --title "$TAG" \
                  --generate-notes
-          gh release upload "${TAG}" \
-            ${{ steps.build.outputs.tarball }} \
-            ${{ steps.build.outputs.checksum }} \
+          gh release upload "$TAG" \
+            "$TARBALL" \
+            "$CHECKSUM" \
+            "$BUNDLE" \
             dist/sbom.cdx.json \
             dist/sbom.spdx.json \
             --clobber
