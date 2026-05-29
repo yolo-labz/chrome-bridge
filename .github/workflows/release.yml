@@ -61,9 +61,11 @@ jobs:
           git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" "${TAG}" \
             || git archive --format=tar.gz --prefix="${PKG}/" -o "dist/${PKG}.tar.gz" HEAD
           ( cd dist && sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256" )
-          printf 'tarball=dist/%s.tar.gz\n' "${PKG}" >> "$GITHUB_OUTPUT"
-          printf 'checksum=dist/%s.tar.gz.sha256\n' "${PKG}" >> "$GITHUB_OUTPUT"
-          printf 'bundle=dist/%s.tar.gz.cosign.bundle\n' "${PKG}" >> "$GITHUB_OUTPUT"
+          {
+            printf 'tarball=dist/%s.tar.gz\n' "${PKG}"
+            printf 'checksum=dist/%s.tar.gz.sha256\n' "${PKG}"
+            printf 'bundle=dist/%s.tar.gz.cosign.bundle\n' "${PKG}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
