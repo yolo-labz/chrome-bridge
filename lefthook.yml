@@ -1,0 +1,9 @@
+# Local git hooks. Activate with `lefthook install`.
+commit-msg:
+  commands:
+    no-ai-trailers:
+      run: |
+        if grep -qiE 'co-authored-by:[[:space:]]*(claude|opus|sonnet|gpt|codex)|generated with claude code|🤖' "{1}"; then
+          echo "✖ commit message carries an AI authorship trailer / 🤖 — remove it"
+          exit 1
+        fi
