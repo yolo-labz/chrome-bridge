@@ -16,7 +16,6 @@ __pycache__/
 Thumbs.db
 
 # AI tooling config — keep local, never commit (public repo reads human-authored)
-CLAUDE.md
 CLAUDE.local.md
 AGENTS.md
 /.claude/
