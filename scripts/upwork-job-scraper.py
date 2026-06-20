@@ -187,7 +187,7 @@ def score_job(j: dict) -> dict:
     # === Client signals ===
     c = j.get("client") or {}
     client_score = 0
-    total_spent = 0
+    total_spent: float = 0
     try:
         total_spent = float(c.get("totalSpent") or 0)
     except (TypeError, ValueError):
@@ -264,8 +264,9 @@ def score_job(j: dict) -> dict:
                 fresh_score = 25
             else:
                 fresh_score = 10
-        except Exception:
-            pass
+        except (ValueError, AttributeError, TypeError):
+            # malformed or absent timestamp: keep defaults (age_h=None, fresh_score=50)
+            age_h = None
     out["age_h"] = round(age_h, 1) if age_h is not None else None
     out["fresh_score"] = fresh_score
 

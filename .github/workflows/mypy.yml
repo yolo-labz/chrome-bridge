@@ -1,10 +1,8 @@
 name: mypy
 # Per-language type gate for the yolo-labz Python archetype (ruff + mypy).
-# Initial tier is REPORT-ONLY: mypy runs on every PR and posts findings to the
-# job summary, but `continue-on-error` keeps it non-blocking while the legacy
-# type-debt baseline is burned down. Ratchet to blocking by deleting the
-# `continue-on-error: true` line once `mypy` is clean (report-only -> block;
-# never loosen). This is the GitHub-native report-only — NOT `|| true`.
+# BLOCKING: mypy is clean on this repo, so a new type error fails the check
+# (ratcheted up from the report-only initial tier; report-only -> block, never
+# loosen). Findings are also posted to the job summary.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -14,7 +12,7 @@ concurrency:
 permissions: {}
 jobs:
   mypy:
-    name: mypy (report-only)
+    name: mypy
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -32,11 +30,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: mypy
-        continue-on-error: true
         run: |
           if [ -d src ]; then TGT=src; else TGT=.; fi
           {
-            echo '## mypy report (report-only — non-blocking initial tier)'
+            echo '## mypy report'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           uvx mypy@2.1.0 --ignore-missing-imports --no-error-summary "$TGT" 2>&1 \
