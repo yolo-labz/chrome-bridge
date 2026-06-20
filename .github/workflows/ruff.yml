@@ -1,0 +1,36 @@
+name: ruff
+# Lint gate for chrome-bridge (the one yolo-labz Python repo without ruff CI;
+# its six siblings already run `ruff check` + `ruff format --check` blocking).
+# Initial tier is REPORT-ONLY via `continue-on-error` while the existing
+# backlog (mostly E501 line-length) is burned down; drop that line to make it
+# blocking (report-only -> block; never loosen). Config lives in ruff.toml,
+# mirroring the fleet ruleset.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  ruff:
+    name: ruff (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          python-version: '3.12'
+      - name: ruff check
+        continue-on-error: true
+        run: uvx ruff@0.15.15 check --output-format=github .

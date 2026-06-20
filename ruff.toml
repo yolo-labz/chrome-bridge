@@ -1,0 +1,9 @@
+# Fleet-standard ruff config (mirrors the sibling yolo-labz Python repos:
+# kokoro-speakd, anthropic-throttle-proxy, craftcut, ...). CI lint is
+# report-only (.github/workflows/ruff.yml) until the backlog is cleared; then
+# drop `continue-on-error` in that workflow to make it blocking.
+line-length = 120
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "TCH"]
