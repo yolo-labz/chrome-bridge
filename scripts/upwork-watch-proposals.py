@@ -16,7 +16,7 @@ Usage:
 """
 
 from __future__ import annotations
-import argparse, json, sys, time, urllib.request, uuid, hashlib
+import argparse, json, sys, time, urllib.parse, urllib.request, uuid, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -158,7 +158,13 @@ def main():
     args = ap.parse_args()
 
     tabs = cb("tabs.query", {"query": {}})["tabs"]
-    upwork_tab = next((t for t in tabs if "upwork.com" in (t.get("url") or "")), tabs[0])
+    def _is_upwork(url: str) -> bool:
+        # Hostname match, not substring — "evil.com/upwork.com" must not qualify
+        # (py/incomplete-url-substring-sanitization).
+        host = urllib.parse.urlparse(url).hostname or ""
+        return host == "upwork.com" or host.endswith(".upwork.com")
+
+    upwork_tab = next((t for t in tabs if _is_upwork(t.get("url") or "")), tabs[0])
     tab_id = upwork_tab["id"]
 
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
