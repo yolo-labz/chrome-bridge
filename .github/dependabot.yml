@@ -18,3 +18,12 @@ updates:
     labels:
       - dependencies
       - github-actions
+    # Group all minor/patch action bumps into ONE PR. Without this,
+    # Dependabot splits github/codeql-action/* and other actions into
+    # separate PRs; grouping cuts weekly PR volume and (for repos that
+    # run full CodeQL) prevents init/analyze/upload version skew.
+    # Majors stay separate for deliberate review.
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
