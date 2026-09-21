@@ -8,29 +8,32 @@
 
 > Trusted-event Chrome automation bridge for the yolo-labz fleet — MV3 first-party extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cb` CLI) that any sibling plugin (`claude-mac-chrome`, `lcc`, `wa`) can shell out to.
 
-Solves the `isTrusted=true` event-trust gate on Vue/React SPAs and the JA4+ TLS fingerprinting gate on regulated sites — without exposing Pedro's daily Chrome to CDP attach (catastrophic blast radius), without sending his cookies to a third-party SaaS like Browserbase (principle IX violation), and without the Patchright bundled-Chromium signature that LinkedIn Q1 2026 BrowserGate scanner now flags.
+Routes browser automation through an extension in a dedicated Chromium profile, rather than attaching to the daily browsing profile. Debug clicks use `chrome.debugger` and the Chrome DevTools Protocol (CDP); the bridge does not establish a unique `isTrusted` capability or guarantee fingerprinting avoidance.
 
 ## Capability
 
 **Pattern.** Trusted-event Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
 
-**Trade-off.** Requires an unbranded Chromium binary (Chrome 137+ `DisableLoadExtensionCommandLineSwitch` policy is now compiled in, so Google-branded Chrome silently drops `--load-extension`) and a one-time extension install — in exchange for `isTrusted=true` events that CDP-driven Playwright/Puppeteer cannot synthesize, and a relay surface that works on Linux where AppleScript is unavailable.
+**Trade-off.** Requires a Chromium build that permits loading the unpacked extension, plus a local relay. The extension uses CDP input commands, not a separate event-trust mechanism unavailable to Playwright or Puppeteer. The relay works on Linux where AppleScript is unavailable.
 
 **Use when.** A Claude Code plugin or shell pipeline needs to inject trusted DOM events into a Vue/React SPA from a Linux or macOS workstation, with the daily Chrome profile untouched and stealth domains (LinkedIn, banking) hard-blocked in the extension source.
 
 ```bash
 git clone https://github.com/yolo-labz/chrome-bridge
 ./launch/profile-auto.sh
-./cli/cb dispatch <command>
+./cli/cb ping
 ```
 
 ## Demo
 
-A 16-second screen-record of the bridge on a fresh stealth profile — `./launch/profile-auto.sh --bg` brand-guards the Chromium candidate, spawns Profile-Auto with the unpacked MV3 extension loaded, registers the relay on `127.0.0.1:9224`, and round-trips three `cb` verbs (`ping`, `tabs`, `debug-click`) including a trusted-event click returning `isTrusted: true`:
+The [legacy animation](docs/assets/bridge-demo.gif) is a **scripted illustration,
+not a screen recording or an executed end-to-end test**. Its rendered PID,
+user agent, timestamp and success responses are example tokens. It must not be
+used as evidence that a browser action succeeded or that an event was trusted.
 
-![chrome-bridge demo: profile-auto launch, brand-guard probe, relay handshake, cb dispatch round-trip with isTrusted=true](docs/assets/bridge-demo.gif)
-
-The capture runs against a fresh `--user-data-dir` with no real cookies, no real authentication, and no real PII; every value (`PID 184932`, the user-agent string, the timestamp) is a literal token rendered into the demo, not a leaked artifact from Pedro's daily session.
+[Provenance and the isolated local-page capture procedure](docs/MEDIA.md) explain
+the source mismatch and the remaining real-recording gate. No new live browser
+capture was made in the 21/09/2026 documentation correction.
 
 ## How `chrome-bridge` compares
 
@@ -38,7 +41,7 @@ Closest peers in the Chrome automation ecosystem, scored against the use case (c
 
 | Capability | `chrome-bridge` | [`playwright`](https://playwright.dev) | [`puppeteer`](https://pptr.dev) | [`selenium`](https://www.selenium.dev) | [`claude-mac-chrome`](https://github.com/yolo-labz/claude-mac-chrome) |
 |---|:---:|:---:|:---:|:---:|:---:|
-| First-party trusted-event injection (`isTrusted=true`) | yes (MV3 + relay) | no (CDP — synthetic events) | no (CDP — synthetic events) | no (WebDriver — synthetic events) | no (AppleScript — OS-level) |
+| Input mechanism (not an event-trust benchmark) | `chrome.debugger` / CDP | browser automation protocol | CDP / WebDriver BiDi | WebDriver | AppleScript / page JS |
 | Cross-platform (Linux + macOS) | yes | yes | yes | yes | macOS only |
 | Pure stdlib Python CLI | yes | no (npm) | no (npm) | no (java/python+selenium) | n/a (Bash) |
 | SLSA L2 + dual SBOM (CycloneDX + SPDX) + cosign | yes | depends on consumer | depends on consumer | depends on consumer | SLSA L3 |

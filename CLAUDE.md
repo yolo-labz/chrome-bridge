@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 Trusted-event Chrome automation bridge. An MV3 first-party browser extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cli/cb`, Python stdlib) on `127.0.0.1:9224` that any sibling plugin can shell out to.
 
-Solves two gates that `chrome.debugger`-from-CDP-attach and AppleScript cannot reach on Chromium under Manifest V3:
-
-1. **`isTrusted=true` event-trust** on Vue/React SPAs whose handlers reject synthetic events.
-2. **First-party network identity** — `chrome.cookies` + `chrome.scripting` in MAIN world preserve the renderer's JA4+ TLS fingerprint and credential store.
+The extension dispatches input via `chrome.debugger` CDP commands and can execute
+requests in the browser context. This does not prove an event-trust advantage over
+other CDP clients or guarantee fingerprinting avoidance. Test individual events
+on a local fixture; do not treat the legacy marketing GIF as execution evidence.
 
 Daily Chrome is **not touched**: Profile-Auto runs in a separate `--user-data-dir` and is only launched when automation is pending. This is **cross-platform (macOS + Linux)**, in contrast to the sibling [`yolo-labz/claude-mac-chrome`](https://github.com/yolo-labz/claude-mac-chrome) which is macOS-only AppleScript over a daily Chrome profile.
 
