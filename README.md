@@ -6,17 +6,17 @@
 
 # chrome-bridge
 
-> Trusted-event Chrome automation bridge for the yolo-labz fleet — MV3 first-party extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cb` CLI) that any sibling plugin (`claude-mac-chrome`, `lcc`, `wa`) can shell out to.
+> Chrome automation bridge (extension + localhost relay) for the yolo-labz fleet — MV3 first-party extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cb` CLI) that any sibling plugin (`claude-mac-chrome`, `lcc`, `wa`) can shell out to.
 
 Routes browser automation through an extension in a dedicated Chromium profile, rather than attaching to the daily browsing profile. Debug clicks use `chrome.debugger` and the Chrome DevTools Protocol (CDP); the bridge does not establish a unique `isTrusted` capability or guarantee fingerprinting avoidance.
 
 ## Capability
 
-**Pattern.** Trusted-event Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
+**Pattern.** Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
 
 **Trade-off.** Requires a Chromium build that permits loading the unpacked extension, plus a local relay. The extension uses CDP input commands, not a separate event-trust mechanism unavailable to Playwright or Puppeteer. The relay works on Linux where AppleScript is unavailable.
 
-**Use when.** A Claude Code plugin or shell pipeline needs to inject trusted DOM events into a Vue/React SPA from a Linux or macOS workstation, with the daily Chrome profile untouched and stealth domains (LinkedIn, banking) hard-blocked in the extension source.
+**Use when.** A plugin or shell pipeline needs CDP input dispatch through an extension in a dedicated Chromium profile on Linux or macOS, without attaching to the daily browsing profile. Check the extension's current domain restrictions before use; this is not a demonstrated event-trust or fingerprint-avoidance guarantee.
 
 ```bash
 git clone https://github.com/yolo-labz/chrome-bridge
@@ -265,7 +265,7 @@ in pkgs.stdenvNoCC.mkDerivation {
   '';
 
   meta = with pkgs.lib; {
-    description = "Trusted-event Chrome automation bridge";
+    description = "Chrome automation bridge with a dedicated profile";
     homepage = "https://github.com/yolo-labz/chrome-bridge";
     license = licenses.mit;
     platforms = platforms.unix;

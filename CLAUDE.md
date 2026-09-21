@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working in this
 
 ## Purpose
 
-Trusted-event Chrome automation bridge. An MV3 first-party browser extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cli/cb`, Python stdlib) on `127.0.0.1:9224` that any sibling plugin can shell out to.
+Chrome automation bridge (extension + localhost relay). An MV3 first-party browser extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cli/cb`, Python stdlib) on `127.0.0.1:9224` that any sibling plugin can shell out to.
 
 The extension dispatches input via `chrome.debugger` CDP commands and can execute
 requests in the browser context. This does not prove an event-trust advantage over
