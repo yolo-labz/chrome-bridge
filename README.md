@@ -1,44 +1,54 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img alt="chrome-bridge: trusted-event Chrome MV3 automation bridge" src="docs/assets/hero-dark.svg">
+  <img alt="chrome-bridge: Chrome MV3 automation bridge in a dedicated profile" src="docs/assets/hero-dark.svg" width="640">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/yolo-labz/.github/main/profile/assets/brand/logo-mark-dark.svg">
+  <img src="https://raw.githubusercontent.com/yolo-labz/.github/main/profile/assets/brand/logo-mark-light.svg" alt="yolo-labz" width="48">
 </picture>
 
 # chrome-bridge
 
-> Trusted-event Chrome automation bridge for the yolo-labz fleet — MV3 first-party extension loaded into a dedicated **Profile-Auto** Chrome instance, paired with a localhost relay daemon (`cb` CLI) that any sibling plugin (`claude-mac-chrome`, `lcc`, `wa`) can shell out to.
+> Drive a dedicated Chromium profile from a local CLI through an extension and relay.
+>
+> Requires a compatible unpacked-extension-capable Chromium build and a localhost relay. An MV3 extension is loaded into a dedicated **Profile-Auto** instance and a `cb` relay daemon on `127.0.0.1:9224` dispatches jobs, so sibling plugins (`claude-mac-chrome`, `lcc`, `wa`) can shell out to it. Respect domain restrictions and explicit action authorization; a dedicated profile does not grant permission to use an account.
 
-Solves the `isTrusted=true` event-trust gate on Vue/React SPAs and the JA4+ TLS fingerprinting gate on regulated sites — without exposing Pedro's daily Chrome to CDP attach (catastrophic blast radius), without sending his cookies to a third-party SaaS like Browserbase (principle IX violation), and without the Patchright bundled-Chromium signature that LinkedIn Q1 2026 BrowserGate scanner now flags.
+Routes browser automation through an extension in a dedicated Chromium profile, rather than attaching to the daily browsing profile. Debug clicks use `chrome.debugger` and the Chrome DevTools Protocol (CDP); the bridge does not establish a unique `isTrusted` capability or guarantee fingerprinting avoidance.
 
 ## Capability
 
-**Pattern.** Trusted-event Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
+**Pattern.** Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
 
-**Trade-off.** Requires an unbranded Chromium binary (Chrome 137+ `DisableLoadExtensionCommandLineSwitch` policy is now compiled in, so Google-branded Chrome silently drops `--load-extension`) and a one-time extension install — in exchange for `isTrusted=true` events that CDP-driven Playwright/Puppeteer cannot synthesize, and a relay surface that works on Linux where AppleScript is unavailable.
+**Trade-off.** Requires a Chromium build that permits loading the unpacked extension, plus a local relay. The extension uses CDP input commands, not a separate event-trust mechanism unavailable to Playwright or Puppeteer. The relay works on Linux where AppleScript is unavailable.
 
-**Use when.** A Claude Code plugin or shell pipeline needs to inject trusted DOM events into a Vue/React SPA from a Linux or macOS workstation, with the daily Chrome profile untouched and stealth domains (LinkedIn, banking) hard-blocked in the extension source.
+**Use when.** A plugin or shell pipeline needs CDP input dispatch through an extension in a dedicated Chromium profile on Linux or macOS, without attaching to the daily browsing profile. Check the extension's current domain restrictions before use; this is not a demonstrated event-trust or fingerprint-avoidance guarantee.
 
 ```bash
 git clone https://github.com/yolo-labz/chrome-bridge
 ./launch/profile-auto.sh
-./cli/cb dispatch <command>
+./cli/cb ping
 ```
 
 ## Demo
 
-A 16-second screen-record of the bridge on a fresh stealth profile — `./launch/profile-auto.sh --bg` brand-guards the Chromium candidate, spawns Profile-Auto with the unpacked MV3 extension loaded, registers the relay on `127.0.0.1:9224`, and round-trips three `cb` verbs (`ping`, `tabs`, `debug-click`) including a trusted-event click returning `isTrusted: true`:
+The [legacy animation](docs/assets/bridge-demo.gif) is a **scripted illustration,
+not a screen recording or an executed end-to-end test**. Its rendered PID,
+user agent, timestamp and success responses are example tokens. It must not be
+used as evidence that a browser action succeeded or that an event was trusted.
 
-![chrome-bridge demo: profile-auto launch, brand-guard probe, relay handshake, cb dispatch round-trip with isTrusted=true](docs/assets/bridge-demo.gif)
-
-The capture runs against a fresh `--user-data-dir` with no real cookies, no real authentication, and no real PII; every value (`PID 184932`, the user-agent string, the timestamp) is a literal token rendered into the demo, not a leaked artifact from Pedro's daily session.
+[Provenance and the isolated local-page capture procedure](docs/MEDIA.md) explain
+the source mismatch and the remaining real-recording gate. No new live browser
+capture was made in the 21/09/2026 documentation correction.
 
 ## How `chrome-bridge` compares
 
-Closest peers in the Chrome automation ecosystem, scored against the use case (cross-platform trusted-event injection from a Python CLI):
+Closest peers in the Chrome automation ecosystem, scored against the use case (cross-platform CDP input from a Python CLI):
 
 | Capability | `chrome-bridge` | [`playwright`](https://playwright.dev) | [`puppeteer`](https://pptr.dev) | [`selenium`](https://www.selenium.dev) | [`claude-mac-chrome`](https://github.com/yolo-labz/claude-mac-chrome) |
 |---|:---:|:---:|:---:|:---:|:---:|
-| First-party trusted-event injection (`isTrusted=true`) | yes (MV3 + relay) | no (CDP — synthetic events) | no (CDP — synthetic events) | no (WebDriver — synthetic events) | no (AppleScript — OS-level) |
+| Input mechanism (not an event-trust benchmark) | `chrome.debugger` / CDP | browser automation protocol | CDP / WebDriver BiDi | WebDriver | AppleScript / page JS |
 | Cross-platform (Linux + macOS) | yes | yes | yes | yes | macOS only |
 | Pure stdlib Python CLI | yes | no (npm) | no (npm) | no (java/python+selenium) | n/a (Bash) |
 | SLSA L2 + dual SBOM (CycloneDX + SPDX) + cosign | yes | depends on consumer | depends on consumer | depends on consumer | SLSA L3 |
@@ -47,7 +57,7 @@ Closest peers in the Chrome automation ecosystem, scored against the use case (c
 | Daily Chrome untouched (isolated `--user-data-dir`) | yes (Profile-Auto) | depends on caller | depends on caller | depends on caller | depends on profile |
 | STEALTH_DOMAINS hard-block in extension source | yes (defense in depth) | n/a | n/a | n/a | manual |
 
-For headless scraping at scale, prefer `playwright` or `puppeteer`; for stealth-critical sites where the daily Chrome profile must drive interactively, prefer `claude-mac-chrome` on macOS. `chrome-bridge` fills the cross-platform, trusted-event, Python-CLI niche the other tools do not.
+For headless scraping at scale, prefer `playwright` or `puppeteer`; for stealth-critical sites where the daily Chrome profile must drive interactively, prefer `claude-mac-chrome` on macOS. `chrome-bridge` fills the cross-platform, CDP-input, Python-CLI niche the other tools do not.
 
 ## Architecture (one-page)
 
@@ -262,7 +272,7 @@ in pkgs.stdenvNoCC.mkDerivation {
   '';
 
   meta = with pkgs.lib; {
-    description = "Trusted-event Chrome automation bridge";
+    description = "Chrome automation bridge with a dedicated profile";
     homepage = "https://github.com/yolo-labz/chrome-bridge";
     license = licenses.mit;
     platforms = platforms.unix;
@@ -278,6 +288,5 @@ MIT. See `LICENSE`.
 
 ---
 
-## Services
-
-Compliance-grade AI architecture for regulated workloads — async-first, USD-denominated, LATAM-based / EN-fluent. See [blog.home301server.com.br/services](https://blog.home301server.com.br/services/).
+Part of **[yolo-labz](https://github.com/yolo-labz)** — small tools, deliberate automation.
+[Org profile](https://github.com/yolo-labz) · [All repositories](https://github.com/orgs/yolo-labz/repositories) · [Engineering notes](https://blog.home301server.com.br)
