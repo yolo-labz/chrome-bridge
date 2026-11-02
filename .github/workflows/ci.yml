@@ -148,7 +148,8 @@ jobs:
           /tmp/actionlint -color
       - name: Install zizmor
         run: |
-          python3 -m pip install --user zizmor==1.5.2
+          python3 -m pip install --user --require-hashes \
+            -r .github/requirements/zizmor.txt
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: zizmor audit
         run: zizmor --format sarif .github/workflows/ > zizmor.sarif || true

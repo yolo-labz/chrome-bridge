@@ -1,0 +1,8 @@
+# zizmor: pinned by version AND hash so the workflow-lint step installs a
+# byte-identical artifact (Pinned-Dependencies). The project ships one wheel per
+# platform with no Python dependencies; hashes are the published PyPI sha256 for
+# the linux-x86_64 wheel the ubuntu-latest runner resolves, plus the sdist so the
+# pin does not silently depend on wheel availability.
+zizmor==1.5.2 \
+    --hash=sha256:0c5f656106c430748858ae459c41c9eed09a1e01e5f42015d80c8fe34740d173 \
+    --hash=sha256:848f04c0d84b085dfb79c66951404372ebf9b3dd0c73076f1baac83db29e74e4
