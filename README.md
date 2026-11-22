@@ -19,7 +19,7 @@ Routes browser automation through an extension in a dedicated Chromium profile, 
 
 ## Capability
 
-**Pattern.** Chrome MV3 automation bridge — an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
+**Pattern.** Chrome MV3 automation bridge, an unpacked MV3 extension is loaded into a dedicated **Profile-Auto** Chromium instance; its service worker long-polls a Python stdlib relay daemon on `127.0.0.1:9224`, dispatches jobs to `chrome.cookies` / `chrome.scripting` / `chrome.debugger.Input`, and returns results as JSON.
 
 **Trade-off.** Requires a Chromium build that permits loading the unpacked extension, plus a local relay. The extension uses CDP input commands, not a separate event-trust mechanism unavailable to Playwright or Puppeteer. The relay works on Linux where AppleScript is unavailable.
 
@@ -84,11 +84,11 @@ For headless scraping at scale, prefer `playwright` or `puppeteer`; for stealth-
                                   └──────────────────────────────────────────┘
 ```
 
-**Daily Chrome** — Pedro's main browsing profile — is **not touched**. Profile-Auto runs in a separate `--user-data-dir` and is only launched when automation work is pending.
+**Daily Chrome**: Pedro's main browsing profile, is **not touched**. Profile-Auto runs in a separate `--user-data-dir` and is only launched when automation work is pending.
 
 ## Why an unbranded Chromium
 
-Chrome 137+ stable / beta / dev / canary all hard-block `--load-extension` regardless of `--disable-features` flags (the `DisableLoadExtensionCommandLineSwitch` policy is now compiled in, not toggleable). Only **unbranded** Chromium builds — open-source Chromium proper, or Chrome for Testing (CfT) — still honour `--load-extension`.
+Chrome 137+ stable / beta / dev / canary all hard-block `--load-extension` regardless of `--disable-features` flags (the `DisableLoadExtensionCommandLineSwitch` policy is now compiled in, not toggleable). Only **unbranded** Chromium builds, open-source Chromium proper, or Chrome for Testing (CfT), still honour `--load-extension`.
 
 The launcher (`launch/profile-auto.sh`) probes a per-OS candidate chain and brand-guards each candidate by parsing `--version` output, refusing anything that identifies as `Google Chrome` (without `for Testing`).
 
@@ -96,7 +96,7 @@ The launcher (`launch/profile-auto.sh`) probes a per-OS candidate chain and bran
 
 Two supported paths, first match wins:
 
-**Option 1 — Homebrew cask (recommended, smallest install):**
+**Option 1. Homebrew cask (recommended, smallest install):**
 
 ```sh
 brew install --cask chromium
@@ -104,7 +104,7 @@ brew install --cask chromium
 xattr -dr com.apple.quarantine /Applications/Chromium.app
 ```
 
-**Option 2 — Chrome for Testing via Patchright (heavier, but Microsoft+Google co-signed, no quarantine surgery):**
+**Option 2. Chrome for Testing via Patchright (heavier, but Microsoft+Google co-signed, no quarantine surgery):**
 
 ```sh
 uv tool install patchright
@@ -115,7 +115,7 @@ The launcher resolves candidates in this order: `/Applications/Chromium.app` →
 
 Override with `CB_CHROME_BIN=/path/to/binary ./launch/profile-auto.sh`.
 
-> macOS launcher changes in this section have not been smoke-tested on macOS in this session — desktop is x86_64-linux. Verify on macbook-pro before relying on the candidate chain. Linux path is smoke-tested.
+> macOS launcher changes in this section have not been smoke-tested on macOS in this session, desktop is x86_64-linux. Verify on macbook-pro before relying on the candidate chain. Linux path is smoke-tested.
 
 ### Linux install
 
@@ -132,10 +132,10 @@ Or any distro-packaged `chromium` binary on `$PATH`. Google-branded `google-chro
 
 | Tier | Example | Mechanism via chrome-bridge |
 |------|---------|------------------------------|
-| **A — stealth-critical** (LinkedIn primary, banking, G&P-visible) | `cliclick` + clipboard-handoff. **Never** `chrome.debugger`, **never** automation. STEALTH_DOMAINS list in `service-worker.js` refuses jobs targeting these even if relay sent them. |
-| **B — semi-stealth** (Upwork primary, Calendly admin, Twitter secondary) | `cb gql` direct GraphQL via `chrome.cookies` Bearer first; `cb debug-click` second when surface insists on UI. Behavioural jitter from `cb debug-type`. |
-| **C — Pedro-owned infra** (sonarqube / dokku / infisical / ProxMox) | Direct REST/SSH first (no chrome-bridge needed). `cb` only when admin auth lives in a browser cookie. |
-| **D — escape hatch** (public scraping, no account at risk) | Patchright + residential proxy in a separate repo. Not a `chrome-bridge` consumer. |
+| **A, stealth-critical** (LinkedIn primary, banking, G&P-visible) | `cliclick` + clipboard-handoff. **Never** `chrome.debugger`, **never** automation. STEALTH_DOMAINS list in `service-worker.js` refuses jobs targeting these even if relay sent them. |
+| **B, semi-stealth** (Upwork primary, Calendly admin, Twitter secondary) | `cb gql` direct GraphQL via `chrome.cookies` Bearer first; `cb debug-click` second when surface insists on UI. Behavioural jitter from `cb debug-type`. |
+| **C. Pedro-owned infra** (sonarqube / dokku / infisical / ProxMox) | Direct REST/SSH first (no chrome-bridge needed). `cb` only when admin auth lives in a browser cookie. |
+| **D, escape hatch** (public scraping, no account at risk) | Patchright + residential proxy in a separate repo. Not a `chrome-bridge` consumer. |
 
 ## Quick start
 
@@ -188,32 +188,32 @@ Or any distro-packaged `chromium` binary on `$PATH`. Google-branded `google-chro
 
 ## STEALTH_DOMAINS guard (defense in depth)
 
-`extension/service-worker.js` hard-blocks any job whose URL hostname matches the `STEALTH_DOMAINS` set. Currently `linkedin.com` is hard-coded. Even if the relay sent a job to `cb gql --url https://www.linkedin.com/...`, the service worker returns `{ok:false, error:"stealth-blocked"}` before the fetch ever leaves the extension. This is intentional belt-and-suspenders for Pedro's principle IX — adding a Tier-A site to the bridge requires editing the extension source, never just the relay.
+`extension/service-worker.js` hard-blocks any job whose URL hostname matches the `STEALTH_DOMAINS` set. Currently `linkedin.com` is hard-coded. Even if the relay sent a job to `cb gql --url https://www.linkedin.com/...`, the service worker returns `{ok:false, error:"stealth-blocked"}` before the fetch ever leaves the extension. This is intentional belt-and-suspenders for Pedro's principle IX, adding a Tier-A site to the bridge requires editing the extension source, never just the relay.
 
 ## What's been validated
 
 - Extension loads cleanly into CfT 145, SW polls relay every 0.4s
 - `cb cookies` / `cb gql` / `cb scripting.eval` / `cb capture.install` / `cb debugger.click` all round-trip end-to-end against Pedro's logged-in Upwork session
 - 20 Upwork skill ontology UIDs resolved via `findSkills` (5 not-in-ontology gaps documented)
-- 26 Upwork mutations identified by JS chunk grepping; canonical bodies captured for `updateTalentProfileTitle`, `updateTalentProfileDescription`, `updateTalentProfileHourlyRate`, `updateTalentProfileSkills`, `updateShowProjectOnProfile`, `updateTalentLanguageRecords`, `addPortfolioProject` (partial — relies on imported fragments)
+- 26 Upwork mutations identified by JS chunk grepping; canonical bodies captured for `updateTalentProfileTitle`, `updateTalentProfileDescription`, `updateTalentProfileHourlyRate`, `updateTalentProfileSkills`, `updateShowProjectOnProfile`, `updateTalentLanguageRecords`, `addPortfolioProject` (partial, relies on imported fragments)
 - `updateTalentProfileTitle` mutation verified working (idempotent test returned `status:true` + persisted state matched)
 - **Found:** `updateTalentProfileSkills` is a silent-no-op for Pedro's profile pre-28/05/2026 (Upwork specialized-profiles deprecation transition). See `captures/upwork-skills-pipeline.md`.
 
 ## Future phases
 
-- **P2** — capture portfolio + catalog mutations (currently rely on imported fragments — need to resolve the webpack chunk that defines `n.g`, `n.a`, `n.i` for `createTalentPortfolio`)
-- **P3** — Haiku 4.5 LLM-fallback resolver — `cb resolve --ax-tree` reads accessibility tree, asks Haiku "which element is the Save button?", returns coords. Gated by `--budget-usd 0.10` per call.
-- **P4** — Profile management — manifest.lock pattern matching `wa` plugin (SessionStart hook diffs bundled vs installed extension, reinstalls on drift)
-- **P5** — generalize to Instagram + future sites (per the synthesis doc roadmap)
+- **P2**: capture portfolio + catalog mutations (currently rely on imported fragments, need to resolve the webpack chunk that defines `n.g`, `n.a`, `n.i` for `createTalentPortfolio`)
+- **P3**: Haiku 4.5 LLM-fallback resolver, `cb resolve --ax-tree` reads accessibility tree, asks Haiku "which element is the Save button?", returns coords. Gated by `--budget-usd 0.10` per call.
+- **P4**: Profile management, manifest.lock pattern matching `wa` plugin (SessionStart hook diffs bundled vs installed extension, reinstalls on drift)
+- **P5**: generalize to Instagram + future sites (per the synthesis doc roadmap)
 
 ## Supply chain & verification
 
 Every tagged release ships with:
 
-- `chrome-bridge-<tag>.tar.gz` — deterministic source archive (`git archive`)
-- `chrome-bridge-<tag>.tar.gz.sha256` — SHA-256 manifest
-- `sbom.cdx.json` — CycloneDX 1.7 SBOM
-- `sbom.spdx.json` — SPDX 2.3 SBOM
+- `chrome-bridge-<tag>.tar.gz`, deterministic source archive (`git archive`)
+- `chrome-bridge-<tag>.tar.gz.sha256`. SHA-256 manifest
+- `sbom.cdx.json`. CycloneDX 1.7 SBOM
+- `sbom.spdx.json`. SPDX 2.3 SBOM
 - A single SLSA v1 build provenance attestation (signed via Sigstore, logged to Rekor) covering all three artifacts as subjects
 
 The build runs on a GitHub-hosted runner from a tag-triggered workflow at `.github/workflows/release.yml`, with every action pinned by 40-char commit SHA. Provenance `builder.id` resolves to `…/release.yml@refs/tags/<tag>`, `runnerEnvironment=github-hosted`, `sourceRepositoryVisibilityAtSigning=public`.
@@ -248,7 +248,7 @@ let
   src = pkgs.fetchurl {
     url = "https://github.com/yolo-labz/chrome-bridge/releases/download/${tag}/chrome-bridge-${tag}.tar.gz";
     # sha256 from the published .sha256 manifest:
-    sha256 = "6f8cd6fe2e171bee29db641a0dd831dc699b4777923d1d8641d78f8bc2ac2fd8";  # v0.1.0 — verify with `nix-prefetch-url <url>`
+    sha256 = "6f8cd6fe2e171bee29db641a0dd831dc699b4777923d1d8641d78f8bc2ac2fd8";  # v0.1.0, verify with `nix-prefetch-url <url>`
   };
 in pkgs.stdenvNoCC.mkDerivation {
   pname = "chrome-bridge";
@@ -280,7 +280,7 @@ in pkgs.stdenvNoCC.mkDerivation {
 }
 ```
 
-For a flake input, prefer `inputs.chrome-bridge.url = "github:yolo-labz/chrome-bridge/v0.1.0"` (immutable tag ref) — the flake lock will pin the exact commit `narHash`, and you can still run `gh attestation verify` against a separately-fetched release tarball as a parallel CI gate.
+For a flake input, prefer `inputs.chrome-bridge.url = "github:yolo-labz/chrome-bridge/v0.1.0"` (immutable tag ref), the flake lock will pin the exact commit `narHash`, and you can still run `gh attestation verify` against a separately-fetched release tarball as a parallel CI gate.
 
 ## License
 
@@ -288,5 +288,5 @@ MIT. See `LICENSE`.
 
 ---
 
-Part of **[yolo-labz](https://github.com/yolo-labz)** — small tools, deliberate automation.
+Part of **[yolo-labz](https://github.com/yolo-labz)**, small tools, deliberate automation.
 [Org profile](https://github.com/yolo-labz) · [All repositories](https://github.com/orgs/yolo-labz/repositories) · [Engineering notes](https://blog.home301server.com.br)
